@@ -210,15 +210,7 @@ func WithDefaultNetwork() Option {
 		if err != nil {
 			return err
 		}
-
-		e.microcksContainerOptions.Add(microcks.WithNetwork(e.network.Name))
-		e.microcksContainerOptions.Add(microcks.WithNetworkAlias(e.network.Name, microcks.DefaultNetworkAlias))
-		e.postmanContainerOptions.Add(postman.WithNetwork(e.network.Name))
-		e.postmanContainerOptions.Add(postman.WithNetworkAlias(e.network.Name, postman.DefaultNetworkAlias))
-		e.asyncMinionContainerOptions.Add(async.WithNetwork(e.network.Name))
-		e.asyncMinionContainerOptions.Add(async.WithNetworkAlias(e.network.Name, async.DefaultNetworkAlias))
-
-		return nil
+		return networkOptionApply(e)
 	}
 }
 
@@ -226,14 +218,16 @@ func WithDefaultNetwork() Option {
 func WithNetwork(network *testcontainers.DockerNetwork) Option {
 	return func(e *MicrocksContainersEnsemble) error {
 		e.network = network
-		e.microcksContainerOptions.Add(microcks.WithNetwork(e.network.Name))
-		e.microcksContainerOptions.Add(microcks.WithNetworkAlias(e.network.Name, microcks.DefaultNetworkAlias))
-		e.postmanContainerOptions.Add(postman.WithNetwork(e.network.Name))
-		e.postmanContainerOptions.Add(postman.WithNetworkAlias(e.network.Name, postman.DefaultNetworkAlias))
-		e.asyncMinionContainerOptions.Add(async.WithNetwork(e.network.Name))
-		e.asyncMinionContainerOptions.Add(async.WithNetworkAlias(e.network.Name, async.DefaultNetworkAlias))
-		return nil
+		return networkOptionApply(e)
 	}
+}
+
+func networkOptionApply(e *MicrocksContainersEnsemble) error {
+	netCustReqOpt := network.WithNetwork([]string{microcks.DefaultNetworkAlias}, e.network)
+	e.microcksContainerOptions.Add(netCustReqOpt)
+	e.postmanContainerOptions.Add(netCustReqOpt)
+	e.asyncMinionContainerOptions.Add(netCustReqOpt)
+	return nil
 }
 
 // WithMainArtifact provides paths to artifacts that will be imported as main or main
