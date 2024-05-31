@@ -25,6 +25,7 @@ import (
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
+	"microcks.io/go-client"
 	microcks "microcks.io/testcontainers-go"
 	"microcks.io/testcontainers-go/internal/test"
 )
@@ -150,4 +151,31 @@ func TestContractTestingFunctionality(t *testing.T) {
 	test.AssertGoodImplementation(t, ctx, microcksContainer)
 
 	test.PrintMicrocksContainerLogs(t, ctx, microcksContainer)
+}
+
+func TestSecretFunctionality(t *testing.T) {
+	ctx := context.Background()
+
+	s := client.Secret{
+		Name:        "test-secret",
+		Description: "test-secret",
+	}
+
+	microcksContainer, err := microcks.RunContainer(ctx,
+		testcontainers.WithImage("quay.io/microcks/microcks-uber:nightly"),
+		microcks.WithMainArtifact("testdata/apipastries-openapi.yaml"),
+		microcks.WithSecret(s),
+	)
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		if err := microcksContainer.Terminate(ctx); err != nil {
+			t.Fatalf("failed to terminate container: %s", err)
+		}
+	})
+
+	test.ConfigRetrieval(t, ctx, microcksContainer)
+
+	id := "test-secret"
+	s.Id = &id
+	test.SecretRetrieval(t, ctx, microcksContainer, &s)
 }

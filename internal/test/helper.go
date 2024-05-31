@@ -48,6 +48,38 @@ func ConfigRetrieval(t *testing.T, ctx context.Context, microcksContainer *micro
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 }
 
+// SecretRetrieval tests the secret.
+func SecretRetrieval(t *testing.T, ctx context.Context, microcksContainer *microcks.MicrocksContainer, s *client.Secret) {
+	httpEndpoint, err := microcksContainer.HttpEndpoint(ctx)
+	if err != nil {
+		require.NoError(t, err)
+		return
+	}
+
+	// Create Microcks client.
+	c, err := client.NewClientWithResponses(httpEndpoint + "/api")
+	if err != nil {
+		require.NoError(t, err)
+		return
+	}
+
+	// Create secret.
+	params := &client.GetSecretsParams{}
+	var reqEditorFn client.RequestEditorFn = func(ctx context.Context, req *http.Request) error {
+		return nil
+	}
+	response, err := c.GetSecretsWithResponse(ctx, params, reqEditorFn)
+	if err != nil {
+		require.NoError(t, err)
+		return
+	}
+
+	secrets := response.JSON200
+	require.Equal(t, 200, response.HTTPResponse.StatusCode)
+	require.Equal(t, s.Description, (*secrets)[0].Description)
+	require.Equal(t, s.Username, (*secrets)[0].Username)
+}
+
 // MockEndpoints tests the mock endpoints.
 func MockEndpoints(t *testing.T, ctx context.Context, microcksContainer *microcks.MicrocksContainer) {
 	endpoint, err := microcksContainer.HttpEndpoint(ctx)

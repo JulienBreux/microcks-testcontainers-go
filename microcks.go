@@ -338,7 +338,10 @@ func (container *MicrocksContainer) importArtifact(ctx context.Context, artifact
 func createSecretHook(s client.Secret) testcontainers.ContainerHook {
 	return func(ctx context.Context, container testcontainers.Container) error {
 		microcksContainer := &MicrocksContainer{Container: container}
-		_, err := microcksContainer.createSecret(ctx, s)
+		statusCode, err := microcksContainer.createSecret(ctx, s)
+		if statusCode != http.StatusCreated {
+			return fmt.Errorf("unable to create secret, bad status code, actual %d, expected %d, ", statusCode, http.StatusCreated)
+		}
 		return err
 	}
 }
@@ -357,7 +360,10 @@ func (container *MicrocksContainer) createSecret(ctx context.Context, s client.S
 	}
 
 	// Create secret.
-	response, err := c.CreateSecret(ctx, s, nil)
+	var none client.RequestEditorFn = func(ctx context.Context, req *http.Request) error {
+		return nil
+	}
+	response, err := c.CreateSecret(ctx, s, none)
 	if err != nil {
 		return 0, err
 	}
